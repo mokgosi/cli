@@ -30,12 +30,19 @@ class DeleteCommand extends Command
             false
         );
 
-
-
         if (!$helper->ask($input, $output, $question)) {
+            $output->writeln([
+                    '=================================================================',
+                    '<info>        Command halted. Nothing has been done.      </info>',
+                ]);
             return;
         }
 
+        $this->delete($input, $output);
+    }
+
+    protected function delete($input, $output)
+    {
         $filesystem = new Filesystem();
 
         try {
@@ -45,7 +52,15 @@ class DeleteCommand extends Command
 
             if($filesystem->exists($file)) {
                 $filesystem->remove($file);
-                $output->writeln('User successfuly deleted!');
+                $output->writeln([
+                    '=================================================================',
+                    '<info>              Sudent successfuly deleted!           </info>',
+                ]);
+            } else {
+                $output->writeln([
+                    '=================================================================',
+                    '<info>  Student record does not exist - no action taken!  </info>',
+                ]);
             }
             
         } catch (IOExceptionInterface $exception) {
