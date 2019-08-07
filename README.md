@@ -33,7 +33,7 @@ $ composer dump -o
 ```
 
 
-### You should be able to run the following commands from you console/terminal:
+### You should be able to run the following commands from you console/terminal from your project root:
 ```
 
 $ php bin\console.php add
