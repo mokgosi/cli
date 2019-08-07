@@ -14,7 +14,7 @@ Based on:
 ### Clone the repository:
 ```
 
-$ git clone git@github.com:mokgosi/altron.git
+$ git clone git@github.com:mokgosi/cli.git
 
 ```
 
