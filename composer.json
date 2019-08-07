@@ -2,8 +2,6 @@
     "require": {
         "symfony/console": "^4.3",
         "symfony/filesystem": "^4.3",
-        "symfony/validator": "^4.3",
-        "doctrine/annotations": "^1.6",
         "symfony/finder": "^4.3"
     },
     "autoload": {

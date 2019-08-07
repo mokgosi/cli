@@ -25,8 +25,6 @@ class SearchCommand extends Command
     {
         $helper = $this->getHelper('question');
 
-        //search by id, name, surname, age, or by curriculum
-
         $question = new ChoiceQuestion(
             'Please select your search criteria by typing a related number: (default=0)',
             ['All',
@@ -41,20 +39,27 @@ class SearchCommand extends Command
 
         $criteria = (string)$helper->ask($input, $output, $question);
 
+        $field = '';
+
         switch($criteria) {
             case 'Search by student id':
+                $field = 'studentId';
                 $keyword = $this->searchByStudentId($input, $output); 
                 break;
             case 'Search by name':
+                $field = 'name';
                 $keyword = $this->searchByField($input, $output, 'name', 'Please enter name: ');
                 break;
             case 'Search by surname':
+                $field = 'surname';
                 $keyword = $this->searchByField($input, $output, 'surname', 'Please enter surname: ');
                 break;
             case 'Search by age':
+                $field = 'age';
                 $keyword = $this->searchByField($input, $output, 'age', 'Please enter age: ');
                 break;
             case 'Search by curriculum':
+                $field = 'curriculum';
                 $keyword = $this->searchByChoice($input, $output);
                 break;
             default:
@@ -62,10 +67,9 @@ class SearchCommand extends Command
                 break;
         } 
 
-        $data = $this->getData($keyword);
+        $data = $this->getData($field, $keyword);
 
         $this->renderData($output, $data);
-        
     }
 
     protected function searchByStudentId($input, $output) 
@@ -122,7 +126,6 @@ class SearchCommand extends Command
                     "Field is required."
                 );
             }
-
             return $answer;
         });
 
@@ -131,12 +134,12 @@ class SearchCommand extends Command
         return $helper->ask($input, $output, $question);
     }
 
-    protected function getData($studentId=null)
+    protected function getData($field=null, $keyword=null)
     {
         $finder = new Finder();
 
-        if(is_numeric($studentId) & strlen($studentId) === 7) {
-            $finder->files()->name($studentId.'.json');
+        if($field === 'studentId') {
+            $finder->files()->name($keyword.'.json');
         } else {
             $finder->files()->name('*.json');
         }
@@ -146,11 +149,13 @@ class SearchCommand extends Command
         $contents = [];
 
         foreach ($finder as $file) {
-
             $array = json_decode($file->getContents(), true);
-            $contents[] = array_values($array);
-        }
 
+            if( (isset($array[$field]) && strtolower($array[$field])==strtolower($keyword) )
+                    || (!$field)) {
+                $contents[] = array_values($array);
+            } 
+        }
         return $contents;
     } 
 
