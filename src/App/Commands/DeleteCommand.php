@@ -20,13 +20,17 @@ class DeleteCommand extends Command
         $this->setName('delete')
             ->setDescription('Delete student')
             ->addArgument('studentId', InputArgument::REQUIRED, 'Student Id.');
-
     }
  
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $helper = $this->getHelper('question');
-        $question = new ConfirmationQuestion('Continue with this action? ', false, '/^(y|j)/i');
+        $question = new ConfirmationQuestion(
+            '<question>Are you sure you want to proceed ?</question> (y/N)', 
+            false
+        );
+
+
 
         if (!$helper->ask($input, $output, $question)) {
             return;
