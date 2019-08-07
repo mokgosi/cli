@@ -25,38 +25,121 @@ class SearchCommand extends Command
     {
         $helper = $this->getHelper('question');
 
-        $studentIdQuestion = new Question('Please enter student id: ', '');
-        $studentIdQuestion->setNormalizer(function ($value) {
-            return $value ? trim($value) : '';
+        //search by id, name, surname, age, or by curriculum
+
+        $question = new ChoiceQuestion(
+            'Please select your search criteria by typing a related number: (default=0)',
+            ['All',
+            'Search by student id',
+            'Search by name',
+            'Search by surname', 
+            'Search by age', 
+            'Search by curriculum'],
+            0
+        );
+        $question->setErrorMessage('Selected criteria %s is invalid.');
+
+        $criteria = (string)$helper->ask($input, $output, $question);
+
+        switch($criteria) {
+            case 'Search by student id':
+                $keyword = $this->searchByStudentId($input, $output); 
+                break;
+            case 'Search by name':
+                $keyword = $this->searchByField($input, $output, 'name', 'Please enter name: ');
+                break;
+            case 'Search by surname':
+                $keyword = $this->searchByField($input, $output, 'surname', 'Please enter surname: ');
+                break;
+            case 'Search by age':
+                $keyword = $this->searchByField($input, $output, 'age', 'Please enter age: ');
+                break;
+            case 'Search by curriculum':
+                $keyword = $this->searchByChoice($input, $output);
+                break;
+            default:
+                $keyword = '';
+                break;
+        } 
+
+        $data = $this->getData($keyword);
+
+        $this->renderData($output, $data);
+        
+    }
+
+    protected function searchByStudentId($input, $output) 
+    {
+        $helper = $this->getHelper('question');
+        $question = new Question('Please enter student id: ', '');
+        $question->setNormalizer(function ($value) {
+             return $value ? trim($value) : '';
         });
-        $studentIdQuestion->setValidator(function ($answer) {
-            if (!preg_match('/^\d+$/', $answer) || strlen($answer) !== 7 ){
+        $question->setValidator(function ($answer) {
+             if (!preg_match('/^\d+$/', $answer) || strlen($answer) !== 7 ){
+                 throw new \RuntimeException(
+                     'Student id required - must be numeric - must be 7 chars long.'
+                 );
+            }
+             return $answer;
+        });
+
+        $question->setMaxAttempts(2);
+
+        return $helper->ask($input, $output, $question);
+
+    }
+
+    protected function searchByChoice($input, $output) : String
+    {
+        $helper = $this->getHelper('question');
+
+        $question = new ChoiceQuestion(
+            'Please select your curriculum by typing a related number: ',
+            ['(M.c.A) - Master of Computer Application',
+            '(M.S.C) - Master Of Science', 
+            '(B.COM) - Bachelor Of Commerce', 
+            '(B.TECH) - Bachelor of Technology',
+            '(M.B.A) - Master Of Business Administration',
+            '(B.A) - Bachelor Of Arts'],
+            0
+        );
+        $question->setErrorMessage('Curriculum %s is invalid.');
+
+        return $helper->ask($input, $output, $question);
+    }
+
+    protected function searchByField($input, $output, $field, $question) : String 
+    {
+        $helper = $this->getHelper('question');
+        $question = new Question($question, '');
+        $question->setNormalizer(function ($value) {
+             return $value ? trim($value) : '';
+        });
+        $question->setValidator(function ($answer) {
+            if (!is_string($answer) ||  $answer === '') {
                 throw new \RuntimeException(
-                    'Student id must be numeric and 7 characters long.'
+                    "Field is required."
                 );
             }
 
             return $answer;
         });
 
-        $studentIdQuestion->setMaxAttempts(2);
+        $question->setMaxAttempts(2);
 
-        $studentId = $helper->ask($input, $output, $studentIdQuestion);
-
-        //get data from file system
-        $data['studentId'] = $studentId;
-
-        $data = $this->getData($studentId);
-
-        $this->renderData($output, $data);
-        
+        return $helper->ask($input, $output, $question);
     }
 
     protected function getData($studentId=null)
     {
         $finder = new Finder();
 
-        $finder->files()->name('*.json');
+        if(is_numeric($studentId) & strlen($studentId) === 7) {
+            $finder->files()->name($studentId.'.json');
+        } else {
+            $finder->files()->name('*.json');
+        }
 
         $finder->files()->in('studentsdb');
 

@@ -10,6 +10,7 @@ use Symfony\Component\Console\Question\Question;
 use Symfony\Component\Console\Question\ChoiceQuestion;
 use Symfony\Component\Filesystem\Exception\IOExceptionInterface;
 use Symfony\Component\Filesystem\Filesystem;
+use Symfony\Component\Finder\Finder;
 
 
 class AddCommand extends Command
@@ -22,14 +23,25 @@ class AddCommand extends Command
  
     protected function execute(InputInterface $input, OutputInterface $output)
     {
+        $output->writeln([
+            '=================================================================',
+            '                          Create new student                     ',
+            '=================================================================',
+            '',
+        ]);
 
         $data = [];
         
         $data['studentId'] = $this->studentId($input, $output);
 
-        $data['name'] = $this->question('first', 'Please enter your first name: ', $input, $output);
+        if($this->getStudent($data['studentId'])) {
+            $output->writeln('Student already exists!');
+            return;
+        }
 
-        $data['surname'] = $this->question('last', 'Please enter your last name: ', $input, $output);
+        $data['name'] = $this->question('Please enter your first name: ', $input, $output);
+
+        $data['surname'] = $this->question('Please enter your last name: ', $input, $output);
 
         $data['age'] = $this->age($input, $output) ;
 
@@ -42,10 +54,41 @@ class AddCommand extends Command
         //save
         $this->save($data['studentId'], $json);
 
-        $output->writeln('User successfuly created!');
+        $output->writeln([
+            '=================================================================',
+        ]);
+
+        $output->writeln('Student created successfuly!');
     }
 
-    protected function studentId($input, $output)
+    /**
+     * Check if student already exists
+     */
+
+    protected function getStudent($id)
+    {
+        $helper = $this->getHelper('question');
+
+        $finder = new Finder();
+
+        $finder->files()->name($id.'.json');
+
+        $finder->files()->in('studentsdb');
+
+        $contents = [];
+
+        foreach ($finder as $file) {
+            $array = json_decode($file->getContents(), true);
+            $contents[] = array_values($array);
+        }
+
+        if(count($contents)>0) {
+            return true;
+        }
+        return false;
+    } 
+
+    protected function studentId($input, $output) : Int
     {
         $helper = $this->getHelper('question');
 
@@ -54,19 +97,21 @@ class AddCommand extends Command
             return $value ? trim($value) : '';
         });
         $question->setValidator(function ($answer) {
-            if (!preg_match('/^\d+$/', $answer) ) {
+            if (!preg_match('/^\d+$/', $answer) || strlen($answer) !== 7 ) {
                 throw new \RuntimeException(
-                    'You must provide a valid student id.'
+                    'Field is required - must be numeric - must be 7 chars long.'
                 );
             }
 
             return $answer;
         });
 
-        return $helper->ask($input, $output, $question);
+        $question->setMaxAttempts(2);
+
+        return (int)$helper->ask($input, $output, $question);
     }
 
-    protected function question($wich, $question, $input, $output)
+    protected function question($question, $input, $output) : String
     {
         $helper = $this->getHelper('question');
 
@@ -77,7 +122,7 @@ class AddCommand extends Command
         ->setValidator(function ($answer) {
             if (!is_string($answer) ||  $answer === '') {
                 throw new \RuntimeException(
-                    "You must provide {$wich} name."
+                    "Field is required."
                 );
             }
 
@@ -87,31 +132,28 @@ class AddCommand extends Command
         return $helper->ask($input, $output, $question);
     }
 
-    protected function age($input, $output) 
+    protected function age($input, $output) : Int
     {
         $helper = $this->getHelper('question');
 
         $question = new Question('Please enter age: ', '');
         $question->setNormalizer(function ($value) {
-            return trim($value);
+            return $value ? trim($value) : '';
         })
         ->setValidator(function ($answer) {
-            if (!preg_match('/^\d+$/', $answer) ) {
+            if (!preg_match('/^\d+$/', $answer) || strlen($answer) > 3 ) {
                 throw new \RuntimeException(
-                    'You must provide a valid age.'
+                    'Field is required - must be numeric - not longer than 3 chars.'
                 );
             }
 
             return $answer;
         });
 
-        $age = $helper->ask($input, $output, $question);            
-
-        return $age;
-
+        return (int)$helper->ask($input, $output, $question);            
     }
 
-    protected function email($input, $output)
+    protected function email($input, $output) : String
     {
         $helper = $this->getHelper('question');
         $question = new Question('Please enter your email address: ', '');
@@ -121,38 +163,36 @@ class AddCommand extends Command
         $question->setValidator(function ($answer) {
             if (!filter_var($answer, FILTER_VALIDATE_EMAIL)) {
                 throw new \RuntimeException(
-                    'You must provide a valid email.'
+                    'Field is required - must be a valid email address.'
                 );
             }
 
             return $answer;
         });
 
-        $email = $helper->ask($input, $output, $question);
-
-        return $email;
+        return $helper->ask($input, $output, $question);
     }
 
-    protected function curriculum($input, $output)
+    protected function curriculum($input, $output) : String
     {
         $helper = $this->getHelper('question');
 
         $question = new ChoiceQuestion(
-            'Please select your course: ',
+            'Please select your course by typing a related number: ',
             ['(M.c.A) - Master of Computer Application',
             '(M.S.C) - Master Of Science', 
             '(B.COM) - Bachelor Of Commerce', 
             '(B.TECH) - Bachelor of Technology',
             '(M.B.A) - Master Of Business Administration',
-            '(B.A) - Bachelor Of Arts']
+            '(B.A) - Bachelor Of Arts'],
+            0
         );
+        $question->setErrorMessage('Course %s is invalid.');
 
-        $curriculum = $helper->ask($input, $output, $question);
-
-        return $curriculum;
+        return $helper->ask($input, $output, $question);
     }
 
-    protected function save($studentId, $json)
+    protected function save($studentId, $json) : void
     {
         $filesystem = new Filesystem();
 
