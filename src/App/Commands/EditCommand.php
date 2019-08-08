@@ -64,29 +64,4 @@ class EditCommand extends Command
 
         $output->writeln('Student record updated successfuly!');
     }
-   
-
-
-
-    // protected function curriculum($input, $output, $student)
-    // {
-    //     $helper = $this->getHelper('question');
-
-    //     $question = new ChoiceQuestion(
-    //         "<question>Please select your curriculum ({$student['curriculum']}): </question>",
-    //         $options = ['(M.c.A) - Master of Computer Application',
-    //         '(M.S.C) - Master Of Science', 
-    //         '(B.COM) - Bachelor Of Commerce', 
-    //         '(B.TECH) - Bachelor of Technology',
-    //         '(M.B.A) - Master Of Business Administration',
-    //         '(B.A) - Bachelor Of Arts'],
-    //         array_search("curriculum",array_keys($options))
-    //     );
-
-    //     $curriculum = $helper->ask($input, $output, $question);
-
-    //     return $curriculum;
-    // }
-
-
 }
